@@ -1,12 +1,12 @@
 from pathlib import Path
-from .resnet import ResNet
+from .cnn14 import CNN14, CNN14DecisionLevelMax
 
 __all__ = {
-    "resnet": ResNet,
+    "cnn14": CNN14,
+    "cnn14decision": CNN14DecisionLevelMax
 }
 
-def get_model(model_name: str, model_variant: str, pretrained: str = None, num_classes: int = 50):
+
+def get_model(model_name: str, num_classes: int = 527):
     assert model_name in __all__.keys(), f"Unavailable model name >> {model_name}.\nList of available model names: {list(__all__.keys())}"
-    if pretrained is not None:
-        assert Path(pretrained).exists(), "Please set the correct pretrained model path"
-    return __all__[model_name](model_variant, pretrained, num_classes)    
+    return __all__[model_name](num_classes)    

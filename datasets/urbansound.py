@@ -8,18 +8,10 @@ from torch.utils.data import Dataset, DataLoader
 from typing import Tuple
 
 
-class ESC50(Dataset):
+class UrbanSound8k(Dataset):
     """
-    50 classes
-    40 examples per class
-    2000 recordings
-    5 major categories: [Animals, Nature sounds, Human non-speech sounds, Interior/domestic sounds, Exterior/urban sounds]
-    Each of the audio is named like this:
-        {FOLD}-{CLIP_ID}-{TAKE}-{TARGET}.wav
     """
-    CLASSES = ['dog', 'rooster', 'pig', 'cow', 'frog', 'cat', 'hen', 'insects', 'sheep', 'crow', 'rain', 'sea_waves', 'crackling_fire', 'crickets', 'chirping_birds', 'water_drops', 'wind', 'pouring_water', 'toilet_flush', 'thunderstorm', 'crying_baby', 'sneezing', 'clapping', 'breathing', 'coughing', 'footsteps', 'laughing', 'brushing_teeth',
-               'snoring', 'drinking_sipping', 'door_wood_knock', 'mouse_click', 'keyboard_typing', 'door_wood_creaks', 'can_opening', 'washing_machine', 'vacuum_cleaner', 'clock_alarm', 'clock_tick', 'glass_breaking', 'helicopter', 'chainsaw', 'siren', 'car_horn', 'engine', 'train', 'church_bells', 'airplane', 'fireworks', 'hand_saw']
-
+    CLASSES = ['air conditioner', 'car horn', 'children playing', 'dog bark', 'drilling', 'engine idling', 'gun shot', 'jackhammer', 'siren', 'street music']
     def __init__(self, root: str, fold: int = 1, channels: int = 3, transform=None) -> None:
         super().__init__()
         self.num_classes = len(self.CLASSES)

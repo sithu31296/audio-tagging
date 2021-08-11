@@ -4,10 +4,8 @@ import yaml
 import time
 from tqdm import tqdm
 from tabulate import tabulate
-from torch.nn import functional as F
 from torch.nn.parallel import DistributedDataParallel as DDP
 from pathlib import Path
-from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
 from torch.utils.tensorboard import SummaryWriter
@@ -15,7 +13,6 @@ from torch.utils.tensorboard import SummaryWriter
 import sys
 sys.path.insert(0, '.')
 from datasets import get_dataset, get_sampler
-from datasets.transforms import get_transforms
 from models import get_model
 from utils.utils import fix_seeds, time_sync, setup_cudnn, setup_ddp
 from utils.schedulers import get_scheduler
@@ -30,14 +27,13 @@ def main(cfg):
     save_dir.mkdir(exist_ok=True)
 
     device = torch.device(cfg['DEVICE'])
-    kd_enable = cfg['KD']['ENABLE']
     ddp_enable = cfg['TRAIN']['DDP']['ENABLE']
     epochs = cfg['TRAIN']['EPOCHS']
     best_acc = 0.0
     gpu = setup_ddp()
 
     # augmentations
-    train_transform, val_transform = get_transforms(cfg)
+    train_transform, val_transform = None, None
 
     # dataset
     train_dataset, val_dataset = get_dataset(cfg, train_transform, val_transform)
@@ -50,20 +46,15 @@ def main(cfg):
     val_dataloader = DataLoader(val_dataset, batch_size=cfg['EVAL']['BATCH_SIZE'], num_workers=cfg['EVAL']['WORKERS'], pin_memory=True, sampler=val_sampler)
     
     # training model
-    model = get_model(cfg['MODEL']['NAME'], cfg['MODEL']['VARIANT'], None, cfg['DATASET']['NUM_CLASSES'])
+    model = get_model(cfg['MODEL']['NAME'], cfg['DATASET']['NUM_CLASSES'])
+    model._init_weights(cfg['MODEL']['PRETRAINED'])
     model = model.to(device)
 
     if ddp_enable:
         model = DDP(model, device_ids=[gpu])
 
-    # knowledge distillation teacher model
-    if kd_enable:
-        teacher_model = get_model(cfg['KD']['TEACHER']['NAME'], cfg['KD']['TEACHER']['VARIANT'], cfg['KD']['TEACHER']['PRETRAINED'], cfg['DATASET']['NUM_CLASSES'], cfg['TRAIN']['IMAGE_SIZE'][0])
-        teacher_model = teacher_model.to(device)
-        teacher_model.eval()
-
     # loss function, optimizer, scheduler, AMP scaler, tensorboard writer
-    loss_fn = get_loss(cfg)
+    loss_fn = get_loss(cfg['TRAIN']['LOSS'])
     optimizer = get_optimizer(model, cfg['TRAIN']['OPTIMIZER']['NAME'], cfg['TRAIN']['OPTIMIZER']['LR'], cfg['TRAIN']['OPTIMIZER']['WEIGHT_DECAY'])
     scheduler = get_scheduler(cfg, optimizer)
     scaler = GradScaler(enabled=cfg['TRAIN']['AMP'])
@@ -83,13 +74,9 @@ def main(cfg):
 
             optimizer.zero_grad()
 
-            if kd_enable:
-                with torch.no_grad():
-                    pred_teacher = teacher_model(img)
-
             with autocast(enabled=cfg['TRAIN']['AMP']):
                 pred = model(img)
-                loss = loss_fn(pred, pred_teacher, lbl) if kd_enable else loss_fn(pred, lbl)
+                loss = loss_fn(pred, lbl)
 
             # Backpropagation
             scaler.scale(loss).backward()
@@ -111,7 +98,7 @@ def main(cfg):
 
         if (epoch % cfg['TRAIN']['EVAL_INTERVAL'] == 0) and (epoch >= cfg['TRAIN']['EVAL_INTERVAL']):
             # evaluate the model
-            test_loss, acc = evaluate(val_dataloader, model, device, F.cross_entropy()) if kd_enable else evaluate(val_dataloader, model, device, loss_fn)
+            test_loss, acc = evaluate(val_dataloader, model, device, loss_fn)
 
             writer.add_scalar('val/loss', test_loss, epoch)
             writer.add_scalar('val/Acc', acc, epoch)
@@ -119,7 +106,7 @@ def main(cfg):
 
             if acc > best_acc:
                 best_acc = acc
-                torch.save(model.module.state_dict() if ddp_enable else model.state_dict(), save_dir / f"{cfg['MODEL']['NAME']}{cfg['MODEL']['SUB_NAME']}.pth")
+                torch.save(model.module.state_dict() if ddp_enable else model.state_dict(), save_dir / f"{cfg['MODEL']['NAME']}_{cfg['DATASET']['NAME']}.pth")
             print(f"Avg Loss: {test_loss:>8f} Current Accuracy: {acc:>0.1f} Best Accuracy: {best_acc:>0.1f}")
         
     writer.close()
@@ -127,11 +114,6 @@ def main(cfg):
 
     # results table
     table = [[f"{cfg['MODEL']['NAME']}-{cfg['MODEL']['SUB_NAME']}", best_acc]]
-
-    # evaluating teacher model
-    if kd_enable:
-        _, teacher_acc = evaluate(val_dataloader, teacher_model, device)
-        table.append([f"{cfg['KD']['TEACHER']['NAME']}-{cfg['KD']['TEACHER']['SUB_NAME']}", teacher_acc])
         
     end = time.gmtime(time_sync() - start)
     total_time = time.strftime("%H:%M:%S", end)

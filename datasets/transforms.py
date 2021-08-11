@@ -1,14 +1,66 @@
 import random
 import librosa
 import torch
-from torch import Tensor
+from torch import nn, Tensor
 from torchaudio import transforms as T
 from torchvision import transforms as VT
+from torchaudio import functional as TF
 
-import pickle
-from torch import Tensor
-from torch.utils.data import Dataset, DataLoader
-from typing import Tuple
+
+
+class DropStripes(nn.Module):
+    def __init__(self, dim: int, drop_width: int, num_stripes: int) -> None:
+        super().__init__()
+        assert dim in [2, 3]    # dim-2 = time, dim-3 = frequency
+        self.dim = dim
+        self.drop_width = drop_width
+        self.num_stripes = num_stripes
+
+    def transform_slice(self, e: Tensor, total_width: int):
+        # e (channels, time_steps, freq_bins)
+        for _ in range(self.num_stripes):
+            distance = torch.randint(0, self.drop_width, size=(1,))[0]
+            bgn = torch.randint(0, total_width-distance, size=(1,))[0]
+
+            if self.dim == 2:
+                e[:, bgn:bgn+distance, :] = 0
+            else:
+                e[:, :, bgn:bgn+distance] = 0
+
+
+    def forward(self, x: Tensor) -> Tensor:
+        # x [B, C, time_steps, freq_bins]
+        if self.training:
+            for y in x: self.transform_slice(y, x.shape[self.dim])
+        return x
+
+
+class SpecAug(nn.Module):
+    """Spec Augmentation
+    Park, D.S., Chan, W., Zhang, Y., Chiu, C.C., Zoph, B., Cubuk, E.D. 
+    and Le, Q.V., 2019. Specaugment: A simple data augmentation method 
+    for automatic speech recognition. arXiv preprint arXiv:1904.08779.
+    """
+    def __init__(self, time_drop_width: int, time_num_stripes: int, freq_drop_width: int, freq_num_stripes: int):
+        super().__init__()
+        self.time_dropper = DropStripes(2, time_drop_width, time_num_stripes)
+        self.freq_dropper = DropStripes(3, freq_drop_width, freq_num_stripes)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.time_dropper(x)
+        print(x.sum())
+        x = self.freq_dropper(x)
+        print(x.sum())
+        return x
+
+
+def mixup_aug(x: Tensor, p: float):
+    """Mixup x of even indexes with x of odd indexes
+    x: [B*2, ...]
+    p: [B*2,]
+    """
+    out = x[::2].transpose(0, -1) * p[::2] + x[1::2].transpose(0, -1) * p[1::2]
+    return out.transpose(0, -1)
 
 
 class AudioAug:
@@ -28,7 +80,7 @@ class AudioAug:
         pitch_shift = random.randint(limits[0][0], limits[0][1]+1)
         time_stretch = random.random() * (limits[1][1] - limits[1][0]) + limits[1][0]
         new_audio = librosa.effects.pitch_shift(audio, self.sr, pitch_shift)
-        new_audio = librosa.effects.time_stretch(new_audio, time_stretch)
+        new_audio = librosa.effects.time_stretch(new_audio, time_stretch, )
         audio = torch.tensor(new_audio)
 
         specs = []
@@ -44,31 +96,10 @@ class AudioAug:
 
 
 
-
-class ESC50(Dataset):
-    def __init__(self, root: str, transform=None) -> None:
-        super().__init__()
-        self.num_classes = 50
-        self.transform = transform
-        with open(root, 'rb') as f:
-            self.data = pickle.load(f)
-        
-        print(f"Found {len(self.data)} audios in {root}.")
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-    def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        data = self.data[index]
-        audio, target = data['audio'], data['target']
-
-        if self.transform:
-            audio = self.transform(audio)
-        return audio, target.long()
-
-
 if __name__ == '__main__':
-    dataset = ESC50('C:\\Users\\sithu\\Documents\\Datasets\\ESC50\\mel\\validation128mel1.pkl')
-    dataloader = DataLoader(dataset, 4, True)
-    audio, target = next(iter(dataloader))
-    print(audio.shape, target)
+    torch.manual_seed(123)
+    x = torch.randn(10, 4, 640, 64)
+    spec_aug = SpecAug(64, 2, 16, 2)
+    spec_aug.train()
+    y = spec_aug(x)
+    print(y.shape)

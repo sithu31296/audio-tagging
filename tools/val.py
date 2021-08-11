@@ -8,7 +8,6 @@ import sys
 sys.path.insert(0, '.')
 from models import get_model
 from datasets import get_dataset
-from datasets.transforms import get_transforms
 from utils.utils import setup_cudnn
 from utils.metrics import accuracy
 
@@ -40,11 +39,11 @@ def evaluate(dataloader, model, device, loss_fn = None):
 def main(cfg):
     device = torch.device(cfg['DEVICE'])
 
-    model = get_model(cfg['MODEL']['NAME'], cfg['MODEL']['VARIANT'], cfg['MODEL_PATH'], cfg['DATASET']['NUM_CLASSES'], cfg['EVAL']['IMAGE_SIZE'][0])
+    model = get_model(cfg['MODEL']['NAME'], cfg['DATASET']['NUM_CLASSES'])
+    model.load_state_dict(torch.load(cfg['MODEL_PATH'], map_location='cpu'))
     model = model.to(device)
 
-    _, val_transform = get_transforms(cfg)
-    _, val_dataset = get_dataset(cfg, val_transform=val_transform)
+    _, val_dataset = get_dataset(cfg, val_transform=None)
     val_dataloader = DataLoader(val_dataset, batch_size=cfg['EVAL']['BATCH_SIZE'], num_workers=cfg['EVAL']['WORKERS'], pin_memory=True)
 
     _, acc = evaluate(val_dataloader, model, device)
