@@ -9,21 +9,21 @@
 <details open>
   <summary>Pretrained Models</small></summary>
 
-Model | Task | AudioSet Accuracy <br><sup>(%) | Sample Rate <br><sup>(kHz) | Window Length | Num Mels | Fmin | Fmax | Weights
---- | --- | --- | --- | --- | --- | --- | --- | ---
-CNN14 | Tagging | 43.1 | 32 | 1024 | 64 | 50 | 14k | [download][cnn14]
-CNN14_16k | Tagging | 43.8 | 16 | 512 | 64 | 50 | 8k | [download][cnn1416k]
+Model | Task | AudioSet Accuracy <br><sup>(%) | Sample Rate <br><sup>(kHz) | Window Length | Num Mels | Fmax | Weights
+--- | --- | --- | --- | --- | --- | --- | --- 
+CNN14 | Tagging | 43.1 | 32 | 1024 | 64 | 14k | [download][cnn14]
+CNN14_16k | Tagging | 43.8 | 16 | 512 | 64 | 8k | [download][cnn1416k]
 ||
-CNN14_DecisionLevelMax | SED | 38.5 | 32 | 1024 | 64 | 50 | 14k | [download][cnn14max]
+CNN14_DecisionLevelMax | SED | 38.5 | 32 | 1024 | 64 | 14k | [download][cnn14max]
 
 </details>
 
 <details open>
   <summary>Fine-tuned Models</summary>
 
-Model | Task | Dataset | Accuracy<br><sup>(%)  | Sample Rate <br><sup>(kHz) | Window Length | Num Mels | Fmin | Fmax | Weights
---- | --- | --- | --- | --- | --- | --- | --- | --- | ---
-CNN14 | Tagging | ESC50 | ? | 32 | 1024 | 64 | 50 | 14k | -
+Model | Task | Dataset | Accuracy<br><sup>(%)  | Sample Rate <br><sup>(kHz) | Window Length | Num Mels | Fmax | Weights
+--- | --- | --- | --- | --- | --- | --- | --- | --- 
+CNN14 | Tagging | ESC50 | ? | 32 | 1024 | 64 | 14k | -
 
 </details>
 
@@ -35,10 +35,10 @@ CNN14 | Tagging | ESC50 | ? | 32 | 1024 | 64 | 50 | 14k | -
 [urbansound8k]: https://urbansounddataset.weebly.com/urbansound8k.html
 [speechcommands]: https://ai.googleblog.com/2017/08/launching-speech-commands-dataset.html
 
-Dataset | Type | Categories | Train | Test | Samples<br>/class | Audio Length | Audio Spec | Size
+Dataset | Type | Classes | Train | Test | Samples<br>/class | Audio Length | Audio Spec | Size
 --- | --- | --- | --- | --- | --- | --- | --- | --- 
-[ESC-50][esc50] | Environmental | 50 | 2,000 | 5 folds | 40 | 5s | 44.1 kHz, mono | 600MB
-[FSDKaggle1028][fsdkaggle] | - | 41 | 9,473 | 1,600 | 94~300 | 300ms~30s | 44.1 kHz, mono | 4.6GB
+[ESC-50][esc50] | Environmental | 50 | 2,000 | 5 folds | 40 | 5s | 44.1kHz, mono | 600MB
+[FSDKaggle1028][fsdkaggle] | - | 41 | 9,473 | 1,600 | 94~300 | 300ms~30s | 44.1kHz, mono | 4.6GB
 [UrbanSound8k][urbansound8k] | Urban | 10 | 8,732 | 10 folds | - | <=4s | - | 5.6GB
 [SpeechCommands][speechcommands] | Words | 30 | 65,000 | - | - | 1s | - | 1.4GB
 
