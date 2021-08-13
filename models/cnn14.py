@@ -41,6 +41,7 @@ class CNN14(nn.Module):
 
     def _init_weights(self, pretrained: str = None):
         if pretrained:
+            print(f"Loading Pretrained Weights from {pretrained}")
             pretrained_dict = torch.load(pretrained, map_location='cpu')
             model_dict = self.state_dict()
             for k in model_dict.keys():
@@ -48,6 +49,7 @@ class CNN14(nn.Module):
                     model_dict[k] = pretrained_dict[k]
             self.load_state_dict(model_dict)
 
+            print("Freezed layers except Final FC layer")
             for n, p in self.named_parameters():
                 if not n.startswith('fc.'):
                     p.requires_grad_ = False
@@ -77,13 +79,10 @@ class CNN14(nn.Module):
         x = self.conv_block6(x)
 
         x = x.mean(3)
-        x1 = x.max(dim=2)[0]
-        x2 = x.mean(2)
-        x = x1 + x2
+        x = x.max(dim=2)[0] + x.mean(2)
         x = self.dropout(x)
         x = self.relu(self.fc1(x))
-        return self.fc(x).sigmoid()
-        
+        return self.fc(x)
 
 
 class CNN14DecisionLevelMax(nn.Module):
@@ -109,6 +108,7 @@ class CNN14DecisionLevelMax(nn.Module):
 
     def _init_weights(self, pretrained: str = None):
         if pretrained:
+            print(f"Loading Pretrained Weights from {pretrained}")
             pretrained_dict = torch.load(pretrained, map_location='cpu')
             model_dict = self.state_dict()
             for k in model_dict.keys():
@@ -116,6 +116,7 @@ class CNN14DecisionLevelMax(nn.Module):
                     model_dict[k] = pretrained_dict[k]
             self.load_state_dict(model_dict)
 
+            print("Freezed layers except Final FC layer")
             for n, p in self.named_parameters():
                 if not n.startswith('fc.'):
                     p.requires_grad_ = False
@@ -147,16 +148,13 @@ class CNN14DecisionLevelMax(nn.Module):
         x = self.conv_block6(x)
 
         x = x.mean(3)
-
-        x1 = self.maxpool(x)
-        x2 = self.avgpool(x)
-        x = x1 + x2
+        x = self.maxpool(x) + self.avgpool(x)
         x = self.dropout(x)
         x = x.transpose(1, 2)
         x = self.relu(self.fc1(x))
 
-        segmentwise = torch.sigmoid(self.fc(x))
-        clipwise = torch.max(segmentwise, dim=1)[0]
+        segmentwise = self.fc(x).sigmoid()
+        clipwise = segmentwise.max(dim=1)[0]
 
         # get framewise output
         framewise = interpolate(segmentwise, self.interpolate_ratio)
@@ -182,8 +180,9 @@ if __name__ == '__main__':
     import time
     model = CNN14(527)
     model.load_state_dict(torch.load('checkpoints/cnn14.pth', map_location='cpu'))
-    x = torch.randn(1, 1, 64, 701)
+    x = torch.randn(3, 1, 64, 701)
     start = time.time()
     y = model(x)
     print(time.time()-start)
     print(y.shape)
+    print(y.min(), y.max())

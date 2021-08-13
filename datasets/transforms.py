@@ -5,7 +5,17 @@ from torch import nn, Tensor
 from torchaudio import transforms as T
 from torchvision import transforms as VT
 from torchaudio import functional as TF
+from typing import Tuple
 
+
+
+class MixUp:
+    def __init__(self, alpha: float = 32.0) -> None:
+        self.alpha = alpha
+
+    def __call__(self, audio: Tensor, target: Tensor) -> Tuple[Tensor, Tensor]:
+        audio = self.alpha * audio[::2].transpose(0, -1) + (1 - self.alpha) * audio[1::2].transpose(0, -1)
+        return audio.transpose(0, -1), target
 
 
 class DropStripes(nn.Module):
@@ -54,14 +64,6 @@ class SpecAug(nn.Module):
         return x
 
 
-def mixup_aug(x: Tensor, p: float):
-    """Mixup x of even indexes with x of odd indexes
-    x: [B*2, ...]
-    p: [B*2,]
-    """
-    out = x[::2].transpose(0, -1) * p[::2] + x[1::2].transpose(0, -1) * p[1::2]
-    return out.transpose(0, -1)
-
 
 class AudioAug:
     def __init__(self, bins, mode) -> None:
@@ -98,8 +100,7 @@ class AudioAug:
 
 if __name__ == '__main__':
     torch.manual_seed(123)
-    x = torch.randn(10, 4, 640, 64)
-    spec_aug = SpecAug(64, 2, 16, 2)
-    spec_aug.train()
-    y = spec_aug(x)
+    x = torch.randn(4, 1, 64, 701)
+    aug = MixUp()
+    y, _ = aug(x, torch.tensor([4, 3, 5, 6]))
     print(y.shape)

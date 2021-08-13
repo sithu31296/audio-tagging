@@ -1,6 +1,6 @@
 DEVICE: cpu                             # device used for training
 SAVE_DIR: './output'                    # output folder name used for saving the trained model and logs
-MODEL_PATH: 'checkpoints/cnn14.pth'      # trained model path (used for evaluation, inference and optimization)
+MODEL_PATH: 'checkpoints/cnn14_esc50.pth'      # trained model path (used for evaluation, inference and optimization)
 
 SAMPLE_RATE: 32000
 WIN_LENGTH: 1024
@@ -13,8 +13,8 @@ MODEL:
   PRETRAINED: 'checkpoints/cnn14.pth'
 
 DATASET:
-  NAME: audioset                        # dataset name
-  ROOT: 'data/'                    # dataset root path
+  NAME: esc50                        # dataset name
+  ROOT: 'data/ESC50'                    # dataset root path
   AUG: true                             # augment the audio dataset or not
 
 TRAIN:

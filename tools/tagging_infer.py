@@ -31,15 +31,15 @@ class AudioTagging:
 
     def preprocess(self, file: str) -> Tensor:
         audio, sr = torchaudio.load(file)
-        if sr != self.sample_rate: audio = F.resample(audio, sr, self.sample_rate, dtype=audio.dtype)
-        audio = self.mel_tf(audio).log10()
-        audio *= 10.0
+        if sr != self.sample_rate: audio = F.resample(audio, sr, self.sample_rate)
+        audio = self.mel_tf(audio)
+        audio = 10.0 * audio.clamp_(1e-10).log10()
         audio = audio.unsqueeze(0)
         audio = audio.to(self.device)
         return audio
 
     def postprocess(self, prob: Tensor) -> str:
-        probs, indices = torch.topk(prob.squeeze().cpu(), self.topk)
+        probs, indices = torch.topk(prob.sigmoid().squeeze().cpu(), self.topk)
         return self.labels[indices], probs
 
     @torch.no_grad()
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     if cfg['TEST']['MODE'] == 'file':
         if file_path.is_file():
             labels, probs = model.predict(str(file_path))
-            print(tabulate({"Class": labels, "Probability": probs}, headers='keys'))
+            print(tabulate({"Class": labels, "Confidence": probs}, headers='keys'))
         else:
             raise NotImplementedError
     else:

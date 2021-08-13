@@ -3,41 +3,32 @@ import torchaudio
 from pathlib import Path
 from torch import Tensor
 from torchaudio import transforms as T
-from torchvision import transforms as VT
+from torchaudio import functional as F
 from torch.utils.data import Dataset, DataLoader
 from typing import Tuple
 
 
 class UrbanSound8k(Dataset):
-    """
-    """
     CLASSES = ['air conditioner', 'car horn', 'children playing', 'dog bark', 'drilling', 'engine idling', 'gun shot', 'jackhammer', 'siren', 'street music']
-    def __init__(self, root: str, fold: int = 1, channels: int = 3, transform=None) -> None:
+
+    def __init__(self, root: str, split: str = 'train', sample_rate: int = 32000, win_length: int = 1024, n_mels: int = 64, fmin: int = 0, fmax: int = None, transform=None) -> None:
         super().__init__()
+        assert split in ['train', 'val']
         self.num_classes = len(self.CLASSES)
+        self.sample_rate = sample_rate
         self.transform = transform
-        sample_rate = 44100
-        n_fft = 4410
-        n_mels = 128        # frequency bins (128 is the best)
-        window_sizes = [25, 50, 100]
-        hop_sizes = [10, 25, 50]
-        size = (128, 250)
+        val_fold = 10
 
-        self.mel_transforms = [
-            T.MelSpectrogram(sample_rate, n_fft, round(window_sizes[i]*sample_rate/1000), round(hop_sizes[i]*sample_rate/1000), n_mels=n_mels)
-        for i in range(channels)]
+        self.mel_tf = T.MelSpectrogram(sample_rate, win_length, win_length, sample_rate//100, fmin, fmax, n_mels=n_mels, norm='slaney', mel_scale='slaney')
+        self.data, self.targets = self.get_data(root, split, val_fold)
 
-        self.resize = VT.Resize(size)
+        print(f"Found {len(self.data)} {split} audios in {root}.")
 
-        self.data, self.targets = self.get_data(root, fold)
-
-        print(f"Found {len(self.data)} audios in {root}.")
-
-    def get_data(self, root: str, fold: int):
+    def get_data(self, root: str, split: int, fold: int):
         root = Path(root)
-        files = (root / 'audio').glob('*.wav')
-        files = list(filter(lambda x: x.stem.startswith(f"{fold}"), files))
-        targets = list(map(lambda x: x.stem.rsplit('-', maxsplit=1)[-1], files))
+        files = (root / 'audio').rglob('*.wav')
+        files = list(filter(lambda x: not str(x.parent).endswith(f"fold{fold}") if split == 'train' else str(x.parent).endswith(f"fold{fold}"), files))
+        targets = list(map(lambda x: x.stem.split('-', maxsplit=2)[1], files))
         assert len(files) == len(targets)
         return files, targets
 
@@ -45,18 +36,21 @@ class UrbanSound8k(Dataset):
         return len(self.data)
 
     def __getitem__(self, index: int) -> Tuple[Tensor, Tensor]:
-        audio, _ = torchaudio.load(self.data[index])        # [1, 220500] >> [1, 128, 501] >> [1, 128, 500]
+        audio, sr = torchaudio.load(self.data[index]) 
+        if audio.shape[0] != 1: audio = audio[:1]           # reduce to mono 
+        audio = F.resample(audio, sr, self.sample_rate)     # resample the audio
+        if audio.shape[1] < 128000: audio = torch.cat([audio, torch.zeros(1, 128000-audio.shape[1])], dim=-1)
+        audio = self.mel_tf(audio)                          # convert to mel spectrogram  
+        audio = 10.0 * audio.clamp_(1e-10).log10()          # convert to log mel spectrogram
         if self.transform: audio = self.transform(audio)
-        audio = [self.resize(mel_tf(audio).log()) for mel_tf in self.mel_transforms]
-        audio = torch.cat(audio, dim=0)
-
         target = int(self.targets[index])
         return audio, target
 
 
 if __name__ == '__main__':
-    transform = None
-    dataset = ESC50('C:\\Users\\sithu\\Documents\\Datasets\\ESC50', transform=transform)
-    dataloader = DataLoader(dataset, 2, True)
-    audio, target = next(iter(dataloader))
-    print(audio.shape, target)
+    dataset = UrbanSound8k('C:\\Users\\sithu\\Documents\\Datasets\\UrbanSound8K', 'val')
+    dataloader = DataLoader(dataset, 4, True)
+    for audio, target in dataloader: 
+        print(audio.shape, target)
+        print(audio.min(), audio.max())
+        break

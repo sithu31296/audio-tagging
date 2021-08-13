@@ -1,4 +1,3 @@
-from pathlib import Path
 from .cnn14 import CNN14, CNN14DecisionLevelMax
 
 __all__ = {

@@ -1,32 +1,38 @@
-from .samplers import *
 from torch import distributed as dist
+from torch.utils.data import DistributedSampler, SequentialSampler, RandomSampler
 from .esc50 import ESC50
 from .audioset import AudioSet
+from .fsdkaggle import FSDKaggle2018
+from .urbansound import UrbanSound8k
+from .speechcommands import SpeechCommandsv1
+from .speechcommands import SpeechCommandsv2
 
 __all__ = {
     "esc50": ESC50,
     "audioset": AudioSet,
+    "fsdkaggle": FSDKaggle2018,
+    "urbansound8k": UrbanSound8k,
+    "speechcommandsv1": SpeechCommandsv1,
+    "speechcommandsv2": SpeechCommandsv2
 }
 
 
-def get_dataset(cfg, train_transform=None, val_transform=None):
+def get_train_dataset(cfg, transform=None):
     dataset_name = cfg['DATASET']['NAME']
     assert dataset_name in __all__.keys(), f"Unavailable dataset name >> {dataset_name}.\nList of available datasets: {list(__all__.keys())}"
-    trainset = __all__[dataset_name](cfg['DATASET']['ROOT'], split='train', transform=train_transform)
-    valset = __all__[dataset_name](cfg['DATASET']['ROOT'], split='val', transform=val_transform)
-    return trainset, valset
+    return __all__[dataset_name](cfg['DATASET']['ROOT'], 'train', cfg['SAMPLE_RATE'], cfg['WIN_LENGTH'], cfg['N_MELS'], cfg['FMIN'], cfg['FMAX'], transform=transform)
+
+
+def get_val_dataset(cfg):
+    dataset_name = cfg['DATASET']['NAME']
+    assert dataset_name in __all__.keys(), f"Unavailable dataset name >> {dataset_name}.\nList of available datasets: {list(__all__.keys())}"
+    return __all__[dataset_name](cfg['DATASET']['ROOT'], 'val', cfg['SAMPLE_RATE'], cfg['WIN_LENGTH'], cfg['N_MELS'], cfg['FMIN'], cfg['FMAX'])
 
 
 def get_sampler(cfg, train_dataset, val_dataset):
-    if not cfg['TRAIN']['DDP']['ENABLE']:
+    if not cfg['TRAIN']['DDP']:
         train_sampler = RandomSampler(train_dataset)
     else:
-        num_tasks = dist.get_world_size()
-        global_rank = dist.get_rank()
-        if cfg['TRAIN']['DDP']['REPEATED_AUG']:
-            train_sampler = RASampler(train_dataset, num_tasks, global_rank, shuffle=True)
-        else:
-            train_sampler = DistributedSampler(train_dataset, num_tasks, global_rank, shuffle=True)
+        train_sampler = DistributedSampler(train_dataset, dist.get_world_size(), dist.get_rank(), shuffle=True)
     val_sampler = SequentialSampler(val_dataset)
-
     return train_sampler, val_sampler

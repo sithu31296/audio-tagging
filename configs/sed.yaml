@@ -21,14 +21,14 @@ TRAIN:
   EPOCHS: 100                           # number of epochs to train
   BATCH_SIZE: 16                         # batch size used to train
   WORKERS: 8                            # number of workers used in training dataloader
-  LOSS: bce                    # loss function name (ce, bce, label_smooth, soft_target)
+  LOSS: bce                    # loss function name (ce, bce, nll, label_smooth, soft_target)
   OPTIMIZER:
     NAME: adamw
     LR: 0.0001                              # initial learning rate used in optimizer
     WEIGHT_DECAY: 0.001                    # decay rate use in optimizer
   SCHEDULER:
     NAME: steplr
-    PARAMS: (30, 0.1)
+    PARAMS: [30, 0.1]
   EVAL_INTERVAL: 20                     # interval to evaluate the model during training
   AMP: false                            # use Automatic Mixed Precision training or not
   DDP: false
@@ -41,4 +41,4 @@ TEST:
   MODE: file                           # inference mode (file, mic)
   FILE: 'assests/test.wav'               # filename or foldername (image mode)
   THRESHOLD: 0.2
-  PLOT: false
+  PLOT: true

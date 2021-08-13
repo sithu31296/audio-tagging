@@ -32,9 +32,9 @@ class SED:
 
     def preprocess(self, file: str) -> Tensor:
         audio, sr = torchaudio.load(file)
-        if sr != self.sample_rate: audio = F.resample(audio, sr, self.sample_rate, dtype=audio.dtype)
-        audio = self.mel_tf(audio).log10()
-        audio *= 10.0
+        if sr != self.sample_rate: audio = F.resample(audio, sr, self.sample_rate)
+        audio = self.mel_tf(audio)
+        audio = 10.0 * audio.clamp_(1e-10).log10()
         audio = audio.unsqueeze(0)
         audio = audio.to(self.device)
         return audio
