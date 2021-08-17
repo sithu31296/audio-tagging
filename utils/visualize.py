@@ -3,8 +3,7 @@ import torchaudio
 import matplotlib.pyplot as plt
 import numpy as np
 from torch import Tensor
-from torchaudio import functional as F
-from IPython.display import Audio, display
+from torchaudio import functional as AF
 
 
 def plot_waveform(waveform: Tensor, sample_rate: int):
@@ -42,7 +41,7 @@ def plot_spectrogram(spec: Tensor):
     ax.set_title("Spectrogram (db)")
     ax.set_ylabel('freq_bin')
     ax.set_xlabel('frame')
-    im = ax.imshow(F.amplitude_to_DB(spec).numpy(), origin='lower', asepct='auto')
+    im = ax.imshow(AF.amplitude_to_DB(spec[0], 10, 1e-10, np.log10(max(spec.max(), 1e-10))).numpy(), origin='lower', aspect='auto')
     fig.colorbar(im, ax=ax)
     plt.show(block=False)
 
@@ -68,6 +67,7 @@ def plot_pitch(waveform: Tensor, sample_rate: int, pitch: Tensor):
 
 
 def play_audio(waveform: Tensor, sample_rate: int):
+    from IPython.display import Audio, display
     waveform = waveform.numpy()
     num_channels, _ = waveform.shape
     

@@ -46,19 +46,21 @@ def test_model_latency(model: nn.Module, inputs: torch.Tensor, use_cuda: bool = 
 def count_parameters(model: nn.Module) -> float:
     return sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6      # in M
 
-def setup_ddp() -> None:
+def setup_ddp() -> int:
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
         rank = int(os.environ['RANK'])
         world_size = int(os.environ['WORLD_SIZE'])
         gpu = int(os.environ(['LOCAL_RANK']))
-
-    torch.cuda.set_device(gpu)
-    dist.init_process_group('nccl', init_method="env://",world_size=world_size, rank=rank)
-    dist.barrier()
+        torch.cuda.set_device(gpu)
+        dist.init_process_group('nccl', init_method="env://", world_size=world_size, rank=rank)
+        dist.barrier()
+    else:
+        gpu = 0
     return gpu
 
 def cleanup_ddp():
-    dist.destroy_process_group()
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 def reduce_tensor(tensor: Tensor) -> Tensor:
     rt = tensor.clone()
@@ -79,3 +81,12 @@ def throughput(dataloader, model: nn.Module, times: int = 30):
     end = time_sync()
 
     print(f"Batch Size {B} throughput {times * B / (end - start)} images/s")
+
+
+def get_dataset_norm(dataloader):
+    mean, std = 0.0, 0.0
+    
+    for audio, _ in dataloader:
+        mean += audio.mean().item() * audio.shape[0]
+        std += audio.std().item() * audio.shape[0]
+    return mean / len(dataloader.dataset), std / len(dataloader.dataset)

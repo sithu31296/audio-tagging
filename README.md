@@ -1,11 +1,17 @@
-# <div align="center">Audio Tagging & Sound Event Detection in PyTorch</div>
+# <div align="center">Audio Classification, Tagging & Sound Event Detection in PyTorch</div>
 
 Progress:
 
-- [ ] Mixup Augmentation
-- [ ] Random Noise Augmentation
-- [ ] Spec Augmentation
-- [ ] SED fine tuning
+- [x] Fine-tune on audio classification
+- [ ] Fine-tune on audio tagging
+- [ ] Fine-tune on sound event detection
+- [x] Add tagging metrics
+- [ ] Add Tutorial
+- [x] Add Augmentation Notebook
+- [ ] Add more schedulers
+- [ ] Add FSDKaggle2019 dataset
+- [ ] Add MTT dataset
+- [ ] Add DESED
 
 
 ## <div align="center">Model Zoo</div>
@@ -26,19 +32,38 @@ CNN14_DecisionLevelMax | SED | 38.5 | 32 | 1024 | 64 | 14k | [download][cnn14max
 
 </details>
 
-> Note: These are the pretrained models from [audioset-tagging-cnn](https://github.com/qiuqiangkong/audioset_tagging_cnn). Check out this official repo if you want to train on audioset. Training on audioset will not be supported in this repo due to resource constraints. 
+> Note: These models will be used as a pretrained model in the fine-tuning tasks below. Check out [audioset-tagging-cnn](https://github.com/qiuqiangkong/audioset_tagging_cnn), if you want to train on AudioSet dataset.  
 
-[esc50cnn14]: https://drive.google.com/file/d/1oYFws7hvGtothbnzf1vDtK4dQ5sjbgR2/view?usp=sharing
+[esc50cnn14]: https://drive.google.com/file/d/1itN-WyEL6Wp_jVBlld6vLaj47UWL2JaP/view?usp=sharing
+[fsd2018]: https://drive.google.com/file/d/1KzKd4icIV2xF7BdW9EZpU9BAZyfCatrD/view?usp=sharing
+[scv1]: https://drive.google.com/file/d/1Mc4UxHOEvaeJXKcuP4RiTggqZZ0CCmOB/view?usp=sharing
 
 <details open>
-  <summary><strong>Fine-tuned Models</strong></summary>
+  <summary><strong>Fine-tuned Classification Models</strong></summary>
 
-Model | Task | Dataset | Accuracy<br><sup>(%)  | Sample Rate <br><sup>(kHz) | Window Length | Num Mels | Fmax | Weights
---- | --- | --- | --- | --- | --- | --- | --- | --- 
-CNN14 | Tagging | ESC50<br>(Fold-5) | 94.75<br>(no aug) | 32 | 1024 | 64 | 14k | [download][esc50cnn14]
-CNN14 | Tagging | FSDKaggle2018<br>(val) | ? | 32 | 1024 | 64 | 14k | -
-CNN14 | Tagging | UrbandSound8k<br>(Fold-10) | ? | 32 | 1024 | 64 | 14k | -
-CNN14 | Tagging | SpeechCommandsv1<br>(val/test) | ? | 32 | 1024 | 64 | 14k | -
+Model | Dataset | Accuracy<br><sup>(%) | Sample Rate <br><sup>(kHz) | Weights
+--- | --- | --- | --- | ---  
+CNN14 | ESC50 (Fold-5)| 95.75 | 32 | [download][esc50cnn14]
+CNN14 | FSDKaggle2018 (test) | 93.56 | 32 | [download][fsd2018]
+CNN14 | SpeechCommandsv1 (val/test) | 96.60/96.77 | 32 | [download][scv1]
+
+</details>
+
+<details>
+  <summary><strong>Fine-tuned Tagging Models</strong></summary>
+
+Model | Dataset | mAP(%)  | AUC | d-prime | Sample Rate <br><sup>(kHz) | Config | Weights
+--- | --- | --- | --- | --- | --- | --- | ---
+CNN14 | FSDKaggle2019 | - | - | - | 32 | - | -
+
+</details>
+
+<details>
+  <summary><strong>Fine-tuned SED Models</strong></summary>
+
+Model | Dataset | F1 | Sample Rate <br><sup>(kHz) | Config | Weights
+--- | --- | --- | --- | --- | ---
+CNN14_DecisionLevelMax | DESED | - | 32 | - | -
 
 </details>
 
@@ -47,20 +72,29 @@ CNN14 | Tagging | SpeechCommandsv1<br>(val/test) | ? | 32 | 1024 | 64 | 14k | -
 ## <div align="center">Supported Datasets</div>
 
 [esc50]: https://github.com/karolpiczak/ESC-50
-[fsdkaggle]: https://zenodo.org/record/2552860
+[fsdkaggle2018]: https://zenodo.org/record/2552860
+[fsdkaggle2019]: https://zenodo.org/record/3612637
 [audioset]: https://research.google.com/audioset/
 [urbansound8k]: https://urbansounddataset.weebly.com/urbansound8k.html
 [speechcommandsv1]: https://ai.googleblog.com/2017/08/launching-speech-commands-dataset.html
 [speechcommandsv2]: http://download.tensorflow.org/data/speech_commands_v0.02.tar.gz
+[mtt]: https://github.com/keunwoochoi/magnatagatune-list
+[desed]: https://project.inria.fr/desed/
 
-Dataset | Type | Classes | Train | Val | Test | Audio Length | Audio Spec | Size
+Dataset | Task | Classes | Train | Val | Test | Audio Length | Audio Spec | Size
 --- | --- | --- | --- | --- | --- | --- | --- | --- 
-[ESC-50][esc50] | Environmental | 50 | 2,000 | 5 folds | - | 5s | 44.1kHz, mono | 600MB
-[UrbanSound8k][urbansound8k] | Urban | 10 | 8,732 | 10 folds | - | <=4s | Vary | 5.6GB
-[FSDKaggle2018][fsdkaggle] | - | 41 | 9,473 | 1,600 | - | 300ms~30s | 44.1kHz, mono | 4.6GB
-[SpeechCommandsv1][speechcommandsv1] | Words | 30 | 51,088 | 6,798 | 6,835 | <=1s | 16kHz, mono | 1.4GB
-[SpeechCommandsv2][speechcommandsv2] | Words | 35 | 84,843 | 9,981 | 11,005 | <=1s | 16kHz, mono | 2.3GB
+[ESC-50][esc50] | Classification | 50 | 2,000 | 5 folds | - | 5s | 44.1kHz, mono | 600MB
+[UrbanSound8k][urbansound8k] | Classification | 10 | 8,732 | 10 folds | - | <=4s | Vary | 5.6GB
+[FSDKaggle2018][fsdkaggle2018] | Classification | 41 | 9,473 | - | 1,600 | 300ms~30s | 44.1kHz, mono | 4.6GB
+[SpeechCommandsv1][speechcommandsv1] | Classification | 30 | 51,088 | 6,798 | 6,835 | <=1s | 16kHz, mono | 1.4GB
+[SpeechCommandsv2][speechcommandsv2] | Classification | 35 | 84,843 | 9,981 | 11,005 | <=1s | 16kHz, mono | 2.3GB
+||
+[FSDKaggle2019][fsdkaggle2019]* | Tagging | 80 | 4,970+19,815 | - | 4,481 | 300ms~30s | 44.1kHz, mono | 24GB
+[MTT][mtt]* | Tagging | 50 | 19,000 | - | - | - | - | 3GB
+||
+[DESED][desed]* | SED | 10 | - | - | - | 10 | - | -
 
+> Notes: `*` datasets are not available yet. Classification dataset are treated as multi-class/single-label classification and tagging and sed datasets are treated as multi-label classification.
 
 <details>
   <summary><strong>Dataset Structure</strong> (click to expand)</summary>
@@ -93,27 +127,64 @@ datasets
 
 </details>
 
+<br>
+<details>
+  <summary><strong>Augmentations</strong> (click to expand)</summary>
+
+Currently, the following augmentations are supported. More will be added in the future. You can test the effects of augmentations with this [notebook](./datasets/aug_test.ipynb)
+
+WaveForm Augmentations:
+
+- [x] MixUp 
+- [x] Background Noise
+- [x] Gaussian Noise
+- [x] Fade In/Out 
+- [x] Volume
+- [ ] CutMix
+
+Spectrogram Augmentations:
+
+- [x] Time Masking
+- [x] Frequency Masking
+- [x] Filter Augmentation
+
+</details>
+
 ---
 
 ## <div align="center">Usage</div>
 
 <details>
+  <summary><strong>Requirements</strong> (click to expand)</summary>
+
+* python >= 3.6
+* pytorch >= 1.8.1
+* torchaudio >= 0.8.1
+
+Other requirements can be installed with `pip install -r requirements.txt`.
+
+</details>
+
+<br>
+<details>
   <summary><strong>Configuration</strong> (click to expand)</summary>
 
-Create a configuration file in `configs`. Sample configuration for ImageNet dataset can be found [here](configs/tagging.yaml). Then edit the fields you think if it is needed. This configuration file is needed for all of training, evaluation and prediction scripts.
+* Create a configuration file in [configs](./configs/). Sample configuration for ESC50 dataset can be found [here](configs/esc50.yaml). 
+* Copy the contents of this and then edit the fields you think if it is needed. 
+* This configuration file is needed for all of training, evaluation and prediction scripts.
 
 </details>
 <br>
 <details>
   <summary><strong>Training</strong> (click to expand)</summary>
 
-Train with 1 GPU:
+To train with a single GPU:
 
 ```bash
 $ python tools/train.py --cfg configs/CONFIG_FILE_NAME.yaml
 ```
 
-Train with 2 GPUs:
+To train with multiple gpus, set `DDP` field in config file to `true` and run as follows:
 
 ```bash
 $ python -m torch.distributed.launch --nproc_per_node=2 --use_env tools/train.py --cfg configs/CONFIG_FILE_NAME.yaml
@@ -128,14 +199,14 @@ $ python -m torch.distributed.launch --nproc_per_node=2 --use_env tools/train.py
 Make sure to set `MODEL_PATH` of the configuration file to your trained model directory.
 
 ```bash
-$ python tools/val.py --cfg configs/CONFIG_FILE_NAME.yaml
+$ python tools/val.py --cfg configs/CONFIG_FILE.yaml
 ```
 
 </details>
 
 <br>
 <details open>
-  <summary><strong>Audio Tagging Inference</strong></summary>
+  <summary><strong>Audio Classification/Tagging Inference</strong></summary>
 
 * Set `MODEL_PATH` of the configuration file to your model's trained weights.
 * Change the dataset name in `DATASET` >> `NAME` as your trained model's dataset.
@@ -143,18 +214,21 @@ $ python tools/val.py --cfg configs/CONFIG_FILE_NAME.yaml
 * Run the following command.
 
 ```bash
-$ python tools/tagging_infer.py --cfg configs/TAGGING_CONFIG_FILE.yaml
+$ python tools/infer.py --cfg configs/CONFIG_FILE.yaml
+
+## for example
+$ python tools/infer.py --cfg configs/audioset.yaml
 ```
 You will get an output similar to this:
 
 ```bash
 Class                     Confidence
 ----------------------  ------------
-Speech                     0.893114
-Telephone bell ringing     0.754014
-Inside, small room         0.235118
-Telephone                  0.182611
-Music                      0.0922332
+Speech                     0.897762
+Telephone bell ringing     0.752206
+Telephone                  0.219329
+Inside, small room         0.20761
+Music                      0.0770325
 ```
 
 </details>
@@ -169,8 +243,12 @@ Music                      0.0922332
 * Run the following command.
 
 ```bash
-$ python tools/sed_infer.py --cfg configs/SED_CONFIG_FILE.yaml
+$ python tools/sed_infer.py --cfg configs/CONFIG_FILE.yaml
+
+## for example
+$ python tools/sed_infer.py --cfg configs/audioset_sed.yaml
 ```
+
 You will get an output similar to this:
 
 ```bash
@@ -180,7 +258,7 @@ Speech                      2.2    7
 Telephone bell ringing      0      2.5
 ```
 
-If you set `TEST` >> `PLOT` to `true`, the following plot will also show:
+The following plot will also be shown, if you set `PLOT` to `true`:
 
 ![sed_result](./assests/sed_result.png)
 
@@ -190,8 +268,44 @@ If you set `TEST` >> `PLOT` to `true`, the following plot will also show:
 <details>
   <summary><strong>References</strong> (click to expand)</summary>
 
+* https://github.com/qiuqiangkong/audioset_tagging_cnn
+* https://github.com/YuanGongND/ast
+* https://github.com/frednam93/FilterAugSED
+* https://github.com/lRomul/argus-freesound
+
+</details>
+
+<br>
+<details>
+  <summary><strong>Citations</strong> (click to expand)</summary>
+
 ```
-[1] Qiuqiang Kong, Yin Cao, Turab Iqbal, Yuxuan Wang, Wenwu Wang, and Mark D. Plumbley. "Panns: Large-scale pretrained audio neural networks for audio pattern recognition." IEEE/ACM Transactions on Audio, Speech, and Language Processing 28 (2020): 2880-2894
+@misc{kong2020panns,
+      title={PANNs: Large-Scale Pretrained Audio Neural Networks for Audio Pattern Recognition}, 
+      author={Qiuqiang Kong and Yin Cao and Turab Iqbal and Yuxuan Wang and Wenwu Wang and Mark D. Plumbley},
+      year={2020},
+      eprint={1912.10211},
+      archivePrefix={arXiv},
+      primaryClass={cs.SD}
+}
+
+@misc{gong2021ast,
+      title={AST: Audio Spectrogram Transformer}, 
+      author={Yuan Gong and Yu-An Chung and James Glass},
+      year={2021},
+      eprint={2104.01778},
+      archivePrefix={arXiv},
+      primaryClass={cs.SD}
+}
+
+@misc{nam2021heavily,
+      title={Heavily Augmented Sound Event Detection utilizing Weak Predictions}, 
+      author={Hyeonuk Nam and Byeong-Yun Ko and Gyeong-Tae Lee and Seong-Hu Kim and Won-Ho Jung and Sang-Min Choi and Yong-Hwa Park},
+      year={2021},
+      eprint={2107.03649},
+      archivePrefix={arXiv},
+      primaryClass={eess.AS}
+}
 ```
 
 </details>

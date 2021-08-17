@@ -1,0 +1,49 @@
+DEVICE: cpu                             # device used for training
+
+MODEL:
+  NAME: cnn14                         # name of the model you are using
+  PRETRAINED: ''
+
+DATASET:
+  NAME: audioset                        # dataset name
+  ROOT: ''                    # dataset root path
+  METRIC: mAP
+  SAMPLE_RATE: 32000
+  AUDIO_LENGTH: 5
+  WIN_LENGTH: 1024
+  HOP_LENGTH: 320
+  N_MELS: 64
+  FMIN: 50
+  FMAX: 14000
+
+AUG:
+  MIXUP: 0.0
+  MIXUP_ALPHA: 10
+  SMOOTHING: 0.1
+  TIME_MASK: 96
+  FREQ_MASK: 24
+
+TRAIN:
+  EPOCHS: 100                           # number of epochs to train
+  EVAL_INTERVAL: 10                     # interval to evaluate the model during training
+  BATCH_SIZE: 16                         # batch size used to train
+  LOSS: bcelogits                    # loss function name (ce, bce, bcelogits, label_smooth, soft_target)
+  AMP: true                            # use Automatic Mixed Precision training or not
+  DDP: false
+  SAVE_DIR: 'output'                    # output folder name used for saving the trained model and logs
+
+OPTIMIZER:
+  NAME: adamw
+  LR: 0.0001                              # initial learning rate used in optimizer
+  WEIGHT_DECAY: 0.001                    # decay rate use in optimizer
+
+SCHEDULER:
+  NAME: steplr
+  PARAMS: [30, 0.1]
+  
+  
+TEST:
+  MODE: file                                      # inference mode (file, mic)
+  FILE: 'assests/test.wav'                        # audio file name (not use if you choose MODE=mic)
+  MODEL_PATH: 'checkpoints/cnn14.pth'       # trained model path 
+  TOPK: 5

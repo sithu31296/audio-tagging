@@ -1,6 +1,10 @@
 import argparse
 import yaml
 import torch
+import multiprocessing as mp
+from pathlib import Path
+from pprint import pprint
+from tabulate import tabulate
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
@@ -9,48 +13,54 @@ sys.path.insert(0, '.')
 from models import get_model
 from datasets import get_val_dataset
 from utils.utils import setup_cudnn
-from utils.metrics import accuracy
+from utils.metrics import Metrics
 
 
 @torch.no_grad()
-def evaluate(dataloader, model, device, loss_fn = None):
+def evaluate(dataloader, model, device, metric='accuracy'):
     print('Evaluating...')
     model.eval()
-    test_loss, acc = 0.0, 0.0
+    ametrics = Metrics(metric)
 
-    for audio, target in tqdm(dataloader):
+    for audio, target in tqdm(dataloader, ):
         audio = audio.to(device)
         target = target.to(device)
+        pred = model(audio)  
+        ametrics.update(pred, target)  
 
-        pred = model(audio)
-        
-        if loss_fn:
-            test_loss += loss_fn(pred, target).item()
-
-        ac = accuracy(pred, target)[0]
-        acc += ac * audio.shape[0]
-        
-    test_loss /= len(dataloader.dataset)
-    acc /= len(dataloader.dataset)
-
-    return test_loss, acc
+    return ametrics.compute()
 
 
 def main(cfg):
-    print(f"Using {cfg['DEVICE']}...")
+    save_dir = Path(cfg['TRAIN']['SAVE_DIR'])
     device = torch.device(cfg['DEVICE'])
+    metric_name = cfg['DATASET']['METRIC']
+    num_workers = mp.cpu_count() 
 
-    dataset = get_val_dataset(cfg)
-    dataloader = DataLoader(dataset, batch_size=cfg['EVAL']['BATCH_SIZE'], num_workers=cfg['EVAL']['WORKERS'], pin_memory=True)
-
-    print(f"Loading Model and trained weights from {cfg['MODEL_PATH']}")
+    dataset = get_val_dataset(cfg['DATASET'])
+    dataloader = DataLoader(dataset, batch_size=cfg['TRAIN']['BATCH_SIZE'], num_workers=num_workers, pin_memory=True)
     model = get_model(cfg['MODEL']['NAME'], dataset.num_classes)
-    model.load_state_dict(torch.load(cfg['MODEL_PATH'], map_location='cpu'))
+
+    try:
+        model_weights = save_dir / f"{cfg['MODEL']['NAME']}_{cfg['DATASET']['NAME']}.pth"
+        model.load_state_dict(torch.load(str(model_weights), map_location='cpu'))
+        print(f"Loading Model and trained weights from {model_weights}")
+    except:
+        print(f"Please consider placing your model's weights in {save_dir}")
+    
     model = model.to(device)
 
-    acc = evaluate(dataloader, model, device)[-1]
-
-    print(f"Accuracy: {acc:.2f}")
+    if metric_name == 'accuracy':
+        acc = evaluate(dataloader, model, device, metric_name)[-1]
+        table = [['Accuracy', f"{acc:.2f}"]]
+    else:
+        mAP, mAUC, d_prime = evaluate(dataloader, model, device, metric_name)
+        table = [
+            ['mAP', f"{mAP:.2f}"],
+            ['AUC', f"{mAUC:.2f}"],
+            ['d-prime', f"{d_prime:.2f}"]
+        ]
+    print(tabulate(table, numalign='right'))
 
 
 if __name__ == '__main__':
@@ -59,7 +69,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     with open(args.cfg) as f:
-        cfg = yaml.load(f, Loader=yaml.FullLoader)
+        cfg = yaml.load(f, Loader=yaml.SafeLoader)
 
+    pprint(cfg)
     setup_cudnn()
     main(cfg)

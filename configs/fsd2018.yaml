@@ -1,12 +1,12 @@
-DEVICE: cpu                             # device used for training
+DEVICE: cuda                             # device used for training
 
 MODEL:
   NAME: cnn14                         # name of the model you are using
   PRETRAINED: 'checkpoints/cnn14.pth'
 
 DATASET:
-  NAME: esc50                        # dataset name
-  ROOT: 'C:/Users/sithu/Documents/Datasets/ESC50'                    # dataset root path
+  NAME: fsdkaggle2018                        # dataset name
+  ROOT: 'C:/Users/sithu/Documents/Datasets/FSDKaggle2018'                    # dataset root path
   METRIC: accuracy
   SOURCE_SAMPLE: 44100
   SAMPLE_RATE: 32000
@@ -26,10 +26,10 @@ AUG:
 
 TRAIN:
   EPOCHS: 100                           # number of epochs to train
-  EVAL_INTERVAL: 5                     # interval to evaluate the model during training
+  EVAL_INTERVAL: 10                     # interval to evaluate the model during training
   BATCH_SIZE: 16                         # batch size used to train
   LOSS: label_smooth                    # loss function name (ce, bce, bcelogits, label_smooth, soft_target)
-  AMP: false                            # use Automatic Mixed Precision training or not
+  AMP: true                            # use Automatic Mixed Precision training or not
   DDP: false
   SAVE_DIR: output                    # output folder name used for saving the trained model and logs
 
@@ -40,11 +40,11 @@ OPTIMIZER:
 
 SCHEDULER:
   NAME: steplr
-  PARAMS: [20, 0.5]
+  PARAMS: [30, 0.1]
   
   
 TEST:
   MODE: file                                      # inference mode (file, mic)
-  FILE: 'assests/test2.wav'                        # audio file name (not use if you choose MODE=mic)
-  MODEL_PATH: 'checkpoints/cnn14_esc50.pth'       # trained model path 
+  FILE: 'assests/test.wav'                        # audio file name (not use if you choose MODE=mic)
+  MODEL_PATH: 'checkpoints/cnn14_fsdkaggle2018.pth'       # trained model path 
   TOPK: 5

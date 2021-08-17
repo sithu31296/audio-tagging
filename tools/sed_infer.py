@@ -22,13 +22,13 @@ class SED:
         self.device = torch.device(cfg['DEVICE'])
         self.labels = np.array(__all__[cfg['DATASET']['NAME']].CLASSES)
         self.model = get_model(cfg['MODEL']['NAME'], len(self.labels))
-        self.model.load_state_dict(torch.load(cfg['MODEL_PATH'], map_location='cpu'))
+        self.model.load_state_dict(torch.load(cfg['TEST']['MODEL_PATH'], map_location='cpu'))
         self.model = self.model.to(self.device)
         self.model.eval()
 
         self.threshold = cfg['TEST']['THRESHOLD']
-        self.sample_rate = cfg['SAMPLE_RATE']
-        self.mel_tf = T.MelSpectrogram(cfg['SAMPLE_RATE'], cfg['WIN_LENGTH'], cfg['WIN_LENGTH'], cfg['SAMPLE_RATE']//100, cfg['FMIN'], cfg['FMAX'], n_mels=cfg['N_MELS'], norm='slaney', mel_scale='slaney')
+        self.sample_rate = cfg['DATASET']['SAMPLE_RATE']
+        self.mel_tf = T.MelSpectrogram(self.sample_rate, cfg['DATASET']['WIN_LENGTH'], cfg['DATASET']['WIN_LENGTH'], cfg['DATASET']['HOP_LENGTH'], cfg['DATASET']['FMIN'], cfg['DATASET']['FMAX'], n_mels=cfg['DATASET']['N_MELS'], norm='slaney')
 
     def preprocess(self, file: str) -> Tensor:
         audio, sr = torchaudio.load(file)
@@ -61,7 +61,7 @@ class SED:
         start = time_sync()
         pred = self.model(audio)[0].squeeze().cpu()
         end = time_sync()
-        print(f"PyTorch Model Inference Time: {(end-start)*1000:.2f}ms")
+        print(f"Model Inference Time: {(end-start)*1000:.2f}ms")
         return pred
 
     def predict(self, file: str) -> str:
@@ -73,11 +73,11 @@ class SED:
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', type=str, default='configs/sed.yaml')
+    parser.add_argument('--cfg', type=str, default='configs/audioset_sed.yaml')
     args = parser.parse_args()
 
     with open(args.cfg) as f:
-        cfg = yaml.load(f, Loader=yaml.FullLoader)
+        cfg = yaml.load(f, Loader=yaml.SafeLoader)
 
     file_path = Path(cfg['TEST']['FILE'])
     model = SED(cfg)

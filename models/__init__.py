@@ -2,7 +2,7 @@ from .cnn14 import CNN14, CNN14DecisionLevelMax
 
 __all__ = {
     "cnn14": CNN14,
-    "cnn14decision": CNN14DecisionLevelMax
+    "cnn14decisionlevelmax": CNN14DecisionLevelMax
 }
 
 

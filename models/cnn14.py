@@ -48,11 +48,6 @@ class CNN14(nn.Module):
                 if not k.startswith('fc.'):
                     model_dict[k] = pretrained_dict[k]
             self.load_state_dict(model_dict)
-
-            print("Freezed layers except Final FC layer")
-            for n, p in self.named_parameters():
-                if not n.startswith('fc.'):
-                    p.requires_grad_ = False
         else:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
@@ -115,12 +110,6 @@ class CNN14DecisionLevelMax(nn.Module):
                 if not k.startswith('fc.'):
                     model_dict[k] = pretrained_dict[k]
             self.load_state_dict(model_dict)
-
-            print("Freezed layers except Final FC layer")
-            for n, p in self.named_parameters():
-                if not n.startswith('fc.'):
-                    p.requires_grad_ = False
-
         else:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
