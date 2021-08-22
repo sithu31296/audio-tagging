@@ -12,6 +12,7 @@ Progress:
 - [ ] Add FSDKaggle2019 dataset
 - [ ] Add MTT dataset
 - [ ] Add DESED
+- [ ] Test in real-time
 
 
 ## <div align="center">Model Zoo</div>
@@ -127,7 +128,6 @@ datasets
 
 </details>
 
-<br>
 <details>
   <summary><strong>Augmentations</strong> (click to expand)</summary>
 
@@ -158,7 +158,7 @@ Spectrogram Augmentations:
   <summary><strong>Requirements</strong> (click to expand)</summary>
 
 * python >= 3.6
-* pytorch >= 1.8.1
+* torch >= 1.8.1
 * torchaudio >= 0.8.1
 
 Other requirements can be installed with `pip install -r requirements.txt`.
@@ -275,7 +275,6 @@ The following plot will also be shown, if you set `PLOT` to `true`:
 
 </details>
 
-<br>
 <details>
   <summary><strong>Citations</strong> (click to expand)</summary>
 
